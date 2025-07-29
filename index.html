@@ -93,6 +93,9 @@
       margin: 10px 0;
       display: none;
     }
+    form {
+      margin: 0;
+    }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -100,38 +103,44 @@
   <div id="login-section">
     <h2>Login</h2>
     <div id="login-error" class="error-message"></div>
-    <input type="email" id="email" placeholder="E-mail" required />
-    <input type="password" id="password" placeholder="Senha" required />
-    <button onclick="login()">Entrar</button>
+    <form id="login-form" onsubmit="event.preventDefault(); login();">
+      <input type="email" id="email" placeholder="E-mail" required />
+      <input type="password" id="password" placeholder="Senha" required />
+      <button type="submit">Entrar</button>
+    </form>
   </div>
 
   <div id="supervisor-section">
     <h2>Cadastro de CTO</h2>
     <div id="cto-error" class="error-message"></div>
-    <input id="cto-nome" placeholder="Nome da CTO" required />
-    <input id="cto-lat" placeholder="Latitude" type="number" step="0.000001" required />
-    <input id="cto-lng" placeholder="Longitude" type="number" step="0.000001" required />
-    <input id="cto-endereco" placeholder="Endereço" required />
-    <input id="cto-numero" placeholder="Número" required />
-    <input id="cto-bairro" placeholder="Bairro" required />
-    <input id="cto-cidade" placeholder="Cidade" required />
-    <select id="cto-status" required>
-      <option value="" disabled selected>Selecione o status</option>
-      <option value="Em manutenção">Em manutenção</option>
-      <option value="Normal">Normal</option>
-    </select>
-    <button onclick="cadastrarCTO()">Cadastrar CTO</button>
+    <form id="cto-form" onsubmit="event.preventDefault(); cadastrarCTO();">
+      <input id="cto-nome" placeholder="Nome da CTO" required />
+      <input id="cto-lat" placeholder="Latitude" type="number" step="0.000001" required />
+      <input id="cto-lng" placeholder="Longitude" type="number" step="0.000001" required />
+      <input id="cto-endereco" placeholder="Endereço" required />
+      <input id="cto-numero" placeholder="Número" required />
+      <input id="cto-bairro" placeholder="Bairro" required />
+      <input id="cto-cidade" placeholder="Cidade" required />
+      <select id="cto-status" required>
+        <option value="" disabled selected>Selecione o status</option>
+        <option value="Em manutenção">Em manutenção</option>
+        <option value="Normal">Normal</option>
+      </select>
+      <button type="submit">Cadastrar CTO</button>
+    </form>
 
     <h2>Cadastro de Bairro</h2>
     <div id="bairro-error" class="error-message"></div>
-    <input id="bairro-nome" placeholder="Nome do Bairro" required />
-    <input id="bairro-cidade" placeholder="Cidade" required />
-    <select id="bairro-status" required>
-      <option value="" disabled selected>Selecione o status</option>
-      <option value="Em manutenção">Em manutenção</option>
-      <option value="Normal">Normal</option>
-    </select>
-    <button onclick="cadastrarBairro()">Cadastrar Bairro</button>
+    <form id="bairro-form" onsubmit="event.preventDefault(); cadastrarBairro();">
+      <input id="bairro-nome" placeholder="Nome do Bairro" required />
+      <input id="bairro-cidade" placeholder="Cidade" required />
+      <select id="bairro-status" required>
+        <option value="" disabled selected>Selecione o status</option>
+        <option value="Em manutenção">Em manutenção</option>
+        <option value="Normal">Normal</option>
+      </select>
+      <button type="submit">Cadastrar Bairro</button>
+    </form>
   </div>
 
   <div id="atendente-section">
@@ -159,10 +168,10 @@
     </div>
   </div>
 
-  <!-- Firebase e Leaflet -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+  <!-- Firebase (versão compatível) e Leaflet -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <script>
@@ -177,7 +186,7 @@
       appId: "1:1061563628444:web:d008669dcc6ac935a82659"
     };
 
-    // Inicialização do Firebase
+    // Inicialização do Firebase (versão compatível)
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
@@ -259,7 +268,7 @@
         return;
       }
       
-      if (isNaN(cto.latitude) {
+      if (isNaN(cto.latitude)) {
         showError(errorElement, 'Latitude inválida.');
         return;
       }
@@ -273,14 +282,7 @@
         .then(() => {
           alert("CTO cadastrada com sucesso!");
           // Limpa os campos
-          document.getElementById('cto-nome').value = '';
-          document.getElementById('cto-lat').value = '';
-          document.getElementById('cto-lng').value = '';
-          document.getElementById('cto-endereco').value = '';
-          document.getElementById('cto-numero').value = '';
-          document.getElementById('cto-bairro').value = '';
-          document.getElementById('cto-cidade').value = '';
-          document.getElementById('cto-status').value = '';
+          document.getElementById('cto-form').reset();
         })
         .catch((error) => {
           showError(errorElement, 'Erro ao cadastrar CTO: ' + error.message);
@@ -308,9 +310,7 @@
         .then(() => {
           alert("Bairro cadastrado com sucesso!");
           // Limpa os campos
-          document.getElementById('bairro-nome').value = '';
-          document.getElementById('bairro-cidade').value = '';
-          document.getElementById('bairro-status').value = '';
+          document.getElementById('bairro-form').reset();
         })
         .catch((error) => {
           showError(errorElement, 'Erro ao cadastrar bairro: ' + error.message);
