@@ -7,7 +7,8 @@
   <style>
     body { 
       font-family: Arial, sans-serif; 
-      margin: 20px; 
+      margin: 0;
+      padding: 20px; 
       background-color: #f5f5f5;
     }
     h2 { 
@@ -33,9 +34,16 @@
     button:hover {
       background-color: #3367d6;
     }
+    button.secondary {
+      background-color: #f1f1f1;
+      color: #333;
+    }
+    button.danger {
+      background-color: #d32f2f;
+    }
     #login-section, #supervisor-section, #atendente-section { 
       display: none; 
-      max-width: 500px; 
+      max-width: 800px; 
       margin: 20px auto;
       padding: 20px;
       background: white;
@@ -72,7 +80,7 @@
       padding: 20px;
       border-radius: 8px;
       width: 90%; 
-      max-width: 600px;
+      max-width: 800px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     #map { 
@@ -93,8 +101,59 @@
       margin: 10px 0;
       display: none;
     }
+    .success-message {
+      color: #388e3c;
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      display: none;
+    }
     form {
       margin: 0;
+    }
+    .filters {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 8px 15px;
+      width: auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab-buttons button {
+      width: auto;
+      padding: 10px 20px;
+    }
+    .tab-buttons button.active {
+      background-color: #3367d6;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
     }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -111,52 +170,191 @@
   </div>
 
   <div id="supervisor-section">
-    <h2>Cadastro de CTO</h2>
-    <div id="cto-error" class="error-message"></div>
-    <form id="cto-form" onsubmit="event.preventDefault(); cadastrarCTO();">
-      <input id="cto-nome" placeholder="Nome da CTO" required />
-      <input id="cto-lat" placeholder="Latitude" type="number" step="0.000001" required />
-      <input id="cto-lng" placeholder="Longitude" type="number" step="0.000001" required />
-      <input id="cto-endereco" placeholder="Endereço" required />
-      <input id="cto-numero" placeholder="Número" required />
-      <input id="cto-bairro" placeholder="Bairro" required />
-      <input id="cto-cidade" placeholder="Cidade" required />
-      <select id="cto-status" required>
-        <option value="" disabled selected>Selecione o status</option>
-        <option value="Em manutenção">Em manutenção</option>
-        <option value="Normal">Normal</option>
-      </select>
-      <button type="submit">Cadastrar CTO</button>
-    </form>
-
-    <h2>Cadastro de Bairro</h2>
-    <div id="bairro-error" class="error-message"></div>
-    <form id="bairro-form" onsubmit="event.preventDefault(); cadastrarBairro();">
-      <input id="bairro-nome" placeholder="Nome do Bairro" required />
-      <input id="bairro-cidade" placeholder="Cidade" required />
-      <select id="bairro-status" required>
-        <option value="" disabled selected>Selecione o status</option>
-        <option value="Em manutenção">Em manutenção</option>
-        <option value="Normal">Normal</option>
-      </select>
-      <button type="submit">Cadastrar Bairro</button>
-    </form>
+    <button class="logout-btn" onclick="logout()">Sair</button>
+    
+    <div class="header">
+      <h1>Painel do Supervisor</h1>
+    </div>
+    
+    <div class="tab-buttons">
+      <button class="active" onclick="openTab('ctos-tab')">CTOs</button>
+      <button onclick="openTab('bairros-tab')">Bairros</button>
+    </div>
+    
+    <div id="ctos-tab" class="tab-content active">
+      <div class="action-buttons">
+        <button onclick="abrirModalCadastroCTO()">Cadastrar CTO</button>
+      </div>
+      
+      <div class="filters">
+        <h3>Filtrar CTOs</h3>
+        <select id="filtro-status-cto" onchange="filtrarCTOs()">
+          <option value="Todos">Todos os status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+      </div>
+      
+      <div id="loading-ctos" class="loading">Carregando CTOs...</div>
+      <div id="success-cto" class="success-message"></div>
+      <div id="error-cto" class="error-message"></div>
+      
+      <table id="tabela-ctos">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Bairro</th>
+            <th>Cidade</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    
+    <div id="bairros-tab" class="tab-content">
+      <div class="action-buttons">
+        <button onclick="abrirModalCadastroBairro()">Cadastrar Bairro</button>
+      </div>
+      
+      <div class="filters">
+        <h3>Filtrar Bairros</h3>
+        <select id="filtro-status-bairro" onchange="filtrarBairros()">
+          <option value="Todos">Todos os status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+      </div>
+      
+      <div id="loading-bairros" class="loading">Carregando bairros...</div>
+      <div id="success-bairro" class="success-message"></div>
+      <div id="error-bairro" class="error-message"></div>
+      
+      <table id="tabela-bairros">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Cidade</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <div id="atendente-section">
-    <h2>CTOs em Manutenção</h2>
-    <div id="loading-ctos" class="loading">Carregando CTOs...</div>
-    <table id="tabela-ctos">
-      <thead><tr><th>Nome</th><th>Bairro</th><th>Ação</th></tr></thead>
-      <tbody></tbody>
-    </table>
+    <button class="logout-btn" onclick="logout()">Sair</button>
+    
+    <div class="header">
+      <h1>Painel do Atendente</h1>
+    </div>
+    
+    <div class="tab-buttons">
+      <button class="active" onclick="openTab('ctos-tab-atendente')">CTOs</button>
+      <button onclick="openTab('bairros-tab-atendente')">Bairros</button>
+    </div>
+    
+    <div id="ctos-tab-atendente" class="tab-content active">
+      <div class="filters">
+        <h3>Filtrar CTOs</h3>
+        <select id="filtro-status-cto-atendente" onchange="filtrarCTOsAtendente()">
+          <option value="Todos">Todos os status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+      </div>
+      
+      <div id="loading-ctos-atendente" class="loading">Carregando CTOs...</div>
+      
+      <table id="tabela-ctos-atendente">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Bairro</th>
+            <th>Cidade</th>
+            <th>Status</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    
+    <div id="bairros-tab-atendente" class="tab-content">
+      <div class="filters">
+        <h3>Filtrar Bairros</h3>
+        <select id="filtro-status-bairro-atendente" onchange="filtrarBairrosAtendente()">
+          <option value="Todos">Todos os status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+      </div>
+      
+      <div id="loading-bairros-atendente" class="loading">Carregando bairros...</div>
+      
+      <table id="tabela-bairros-atendente">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Cidade</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 
-    <h2>Bairros em Manutenção</h2>
-    <div id="loading-bairros" class="loading">Carregando bairros...</div>
-    <table id="tabela-bairros">
-      <thead><tr><th>Nome</th><th>Cidade</th></tr></thead>
-      <tbody></tbody>
-    </table>
+  <!-- Modal Cadastro CTO -->
+  <div id="modal-cto" class="modal">
+    <div class="modal-content">
+      <h3 id="modal-cto-titulo">Cadastrar CTO</h3>
+      <div id="cto-modal-error" class="error-message"></div>
+      <form id="cto-form">
+        <input id="cto-id" type="hidden">
+        <input id="cto-nome" placeholder="Nome da CTO" required />
+        <input id="cto-lat" placeholder="Latitude" type="number" step="0.000001" required />
+        <input id="cto-lng" placeholder="Longitude" type="number" step="0.000001" required />
+        <input id="cto-endereco" placeholder="Endereço" required />
+        <input id="cto-numero" placeholder="Número" required />
+        <input id="cto-bairro" placeholder="Bairro" required />
+        <input id="cto-cidade" placeholder="Cidade" required />
+        <select id="cto-status" required>
+          <option value="" disabled selected>Selecione o status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+        <div class="action-buttons">
+          <button type="button" class="secondary" onclick="fecharModal('modal-cto')">Cancelar</button>
+          <button type="button" onclick="salvarCTO()">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Cadastro Bairro -->
+  <div id="modal-bairro" class="modal">
+    <div class="modal-content">
+      <h3 id="modal-bairro-titulo">Cadastrar Bairro</h3>
+      <div id="bairro-modal-error" class="error-message"></div>
+      <form id="bairro-form">
+        <input id="bairro-id" type="hidden">
+        <input id="bairro-nome" placeholder="Nome do Bairro" required />
+        <input id="bairro-cidade" placeholder="Cidade" required />
+        <select id="bairro-status" required>
+          <option value="" disabled selected>Selecione o status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+        <div class="action-buttons">
+          <button type="button" class="secondary" onclick="fecharModal('modal-bairro')">Cancelar</button>
+          <button type="button" onclick="salvarBairro()">Salvar</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Modal do Mapa -->
@@ -164,7 +362,7 @@
     <div class="modal-content">
       <h3 id="map-titulo"></h3>
       <div id="map"></div>
-      <button onclick="fecharMapa()">Fechar</button>
+      <button onclick="fecharModal('map-modal')">Fechar</button>
     </div>
   </div>
 
@@ -191,15 +389,23 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // Lista de e-mails de supervisores
+    // Lista de e-mails de supervisores e atendentes
     const supervisorEmails = [
       "eduardo@sejafibra.com", 
       "junior@sejafibra.net", 
       "bioranss@gmail.com"
     ];
+    
+    const atendenteEmails = [
+      "tais@sejafibra.net",
+      "ana@sejafibra.net",
+      "alissia@sejafibra.net"
+    ];
 
     // Variável para armazenar o mapa
     let map;
+    let ctoEditando = null;
+    let bairroEditando = null;
 
     // Função de login
     function login() {
@@ -221,9 +427,13 @@
           
           if (supervisorEmails.includes(userEmail)) {
             document.getElementById('supervisor-section').style.display = 'block';
-          } else {
+            carregarTabelasSupervisor();
+          } else if (atendenteEmails.includes(userEmail)) {
             document.getElementById('atendente-section').style.display = 'block';
-            carregarTabelas();
+            carregarTabelasAtendente();
+          } else {
+            logout();
+            showError(errorElement, 'Acesso não autorizado para este e-mail.');
           }
         })
         .catch((error) => {
@@ -246,65 +456,159 @@
         });
     }
 
-    // Função para cadastrar CTO
-    function cadastrarCTO() {
-  const errorElement = document.getElementById('cto-error');
-  errorElement.style.display = 'none';
-  
-  const cto = {
-    nome: document.getElementById('cto-nome').value,
-    latitude: parseFloat(document.getElementById('cto-lat').value),
-    longitude: parseFloat(document.getElementById('cto-lng').value),
-    endereco: document.getElementById('cto-endereco').value,
-    numero: document.getElementById('cto-numero').value,
-    bairro: document.getElementById('cto-bairro').value,
-    cidade: document.getElementById('cto-cidade').value,
-    status: document.getElementById('cto-status').value
-  };
-  
-  // Validação dos campos
-  if (!cto.nome || !cto.endereco || !cto.numero || !cto.bairro || !cto.cidade || !cto.status) {
-    showError(errorElement, 'Por favor, preencha todos os campos.');
-    return;
-  }
-  
-  if (isNaN(cto.latitude)) {
-    showError(errorElement, 'Latitude inválida.');
-    return;
-  }
-  
-  if (isNaN(cto.longitude)) {
-    showError(errorElement, 'Longitude inválida.');
-    return;
-  }
+    // Função de logout
+    function logout() {
+      auth.signOut().then(() => {
+        document.getElementById('supervisor-section').style.display = 'none';
+        document.getElementById('atendente-section').style.display = 'none';
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('login-form').reset();
+      });
+    }
 
-  // Verifica se o usuário está autenticado
-  if (!auth.currentUser) {
-    showError(errorElement, 'Você precisa estar logado para cadastrar.');
-    return;
-  }
-
-  db.ref('ctos').push(cto)
-    .then(() => {
-      alert("CTO cadastrada com sucesso!");
+    // Função para abrir modal de cadastro de CTO
+    function abrirModalCadastroCTO() {
+      document.getElementById('modal-cto-titulo').textContent = 'Cadastrar CTO';
       document.getElementById('cto-form').reset();
-    })
-    .catch((error) => {
-      let errorMessage = 'Erro ao cadastrar: ';
-      if (error.code === 'PERMISSION_DENIED') {
-        errorMessage += 'Sem permissão. Verifique se você está logado com um e-mail autorizado.';
-      } else {
-        errorMessage += error.message;
-      }
-      showError(errorElement, errorMessage);
-    });
-}
+      document.getElementById('cto-id').value = '';
+      ctoEditando = null;
+      document.getElementById('modal-cto').style.display = 'block';
+    }
 
-    // Função para cadastrar Bairro
-    function cadastrarBairro() {
-      const errorElement = document.getElementById('bairro-error');
+    // Função para abrir modal de edição de CTO
+    function editarCTO(id, cto) {
+      document.getElementById('modal-cto-titulo').textContent = 'Editar CTO';
+      document.getElementById('cto-id').value = id;
+      document.getElementById('cto-nome').value = cto.nome;
+      document.getElementById('cto-lat').value = cto.latitude;
+      document.getElementById('cto-lng').value = cto.longitude;
+      document.getElementById('cto-endereco').value = cto.endereco;
+      document.getElementById('cto-numero').value = cto.numero;
+      document.getElementById('cto-bairro').value = cto.bairro;
+      document.getElementById('cto-cidade').value = cto.cidade;
+      document.getElementById('cto-status').value = cto.status;
+      ctoEditando = {id, ...cto};
+      document.getElementById('modal-cto').style.display = 'block';
+    }
+
+    // Função para salvar CTO (criação ou edição)
+    function salvarCTO() {
+      const errorElement = document.getElementById('cto-modal-error');
       errorElement.style.display = 'none';
       
+      const id = document.getElementById('cto-id').value;
+      const cto = {
+        nome: document.getElementById('cto-nome').value,
+        latitude: parseFloat(document.getElementById('cto-lat').value),
+        longitude: parseFloat(document.getElementById('cto-lng').value),
+        endereco: document.getElementById('cto-endereco').value,
+        numero: document.getElementById('cto-numero').value,
+        bairro: document.getElementById('cto-bairro').value,
+        cidade: document.getElementById('cto-cidade').value,
+        status: document.getElementById('cto-status').value
+      };
+      
+      // Validação dos campos
+      if (!cto.nome || !cto.endereco || !cto.numero || !cto.bairro || !cto.cidade || !cto.status) {
+        showError(errorElement, 'Por favor, preencha todos os campos.');
+        return;
+      }
+      
+      if (isNaN(cto.latitude)) {
+        showError(errorElement, 'Latitude inválida.');
+        return;
+      }
+      
+      if (isNaN(cto.longitude)) {
+        showError(errorElement, 'Longitude inválida.');
+        return;
+      }
+
+      // Verifica se o usuário está autenticado
+      if (!auth.currentUser) {
+        showError(errorElement, 'Você precisa estar logado para cadastrar.');
+        return;
+      }
+
+      let promise;
+      if (id) {
+        // Edição
+        promise = db.ref(`ctos/${id}`).update(cto);
+      } else {
+        // Cadastro novo
+        promise = db.ref('ctos').push(cto);
+      }
+
+      promise
+        .then(() => {
+          const successElement = id ? 
+            document.getElementById('success-cto') : 
+            document.getElementById('success-cto');
+          
+          successElement.textContent = id ? 
+            'CTO atualizada com sucesso!' : 
+            'CTO cadastrada com sucesso!';
+          successElement.style.display = 'block';
+          setTimeout(() => successElement.style.display = 'none', 3000);
+          
+          fecharModal('modal-cto');
+          carregarTabelasSupervisor();
+        })
+        .catch((error) => {
+          let errorMessage = 'Erro ao salvar: ';
+          if (error.code === 'PERMISSION_DENIED') {
+            errorMessage += 'Sem permissão. Verifique se você está logado com um e-mail autorizado.';
+          } else {
+            errorMessage += error.message;
+          }
+          showError(errorElement, errorMessage);
+        });
+    }
+
+    // Função para excluir CTO
+    function excluirCTO(id) {
+      if (confirm('Tem certeza que deseja excluir esta CTO?')) {
+        db.ref(`ctos/${id}`).remove()
+          .then(() => {
+            const successElement = document.getElementById('success-cto');
+            successElement.textContent = 'CTO excluída com sucesso!';
+            successElement.style.display = 'block';
+            setTimeout(() => successElement.style.display = 'none', 3000);
+            carregarTabelasSupervisor();
+          })
+          .catch((error) => {
+            const errorElement = document.getElementById('error-cto');
+            showError(errorElement, 'Erro ao excluir CTO: ' + error.message);
+          });
+      }
+    }
+
+    // Função para abrir modal de cadastro de bairro
+    function abrirModalCadastroBairro() {
+      document.getElementById('modal-bairro-titulo').textContent = 'Cadastrar Bairro';
+      document.getElementById('bairro-form').reset();
+      document.getElementById('bairro-id').value = '';
+      bairroEditando = null;
+      document.getElementById('modal-bairro').style.display = 'block';
+    }
+
+    // Função para editar bairro
+    function editarBairro(id, bairro) {
+      document.getElementById('modal-bairro-titulo').textContent = 'Editar Bairro';
+      document.getElementById('bairro-id').value = id;
+      document.getElementById('bairro-nome').value = bairro.nome;
+      document.getElementById('bairro-cidade').value = bairro.cidade;
+      document.getElementById('bairro-status').value = bairro.status;
+      bairroEditando = {id, ...bairro};
+      document.getElementById('modal-bairro').style.display = 'block';
+    }
+
+    // Função para salvar bairro (criação ou edição)
+    function salvarBairro() {
+      const errorElement = document.getElementById('bairro-modal-error');
+      errorElement.style.display = 'none';
+      
+      const id = document.getElementById('bairro-id').value;
       const bairro = {
         nome: document.getElementById('bairro-nome').value,
         cidade: document.getElementById('bairro-cidade').value,
@@ -317,19 +621,55 @@
         return;
       }
 
-      db.ref('bairros').push(bairro)
+      let promise;
+      if (id) {
+        // Edição
+        promise = db.ref(`bairros/${id}`).update(bairro);
+      } else {
+        // Cadastro novo
+        promise = db.ref('bairros').push(bairro);
+      }
+
+      promise
         .then(() => {
-          alert("Bairro cadastrado com sucesso!");
-          // Limpa os campos
-          document.getElementById('bairro-form').reset();
+          const successElement = id ? 
+            document.getElementById('success-bairro') : 
+            document.getElementById('success-bairro');
+          
+          successElement.textContent = id ? 
+            'Bairro atualizado com sucesso!' : 
+            'Bairro cadastrado com sucesso!';
+          successElement.style.display = 'block';
+          setTimeout(() => successElement.style.display = 'none', 3000);
+          
+          fecharModal('modal-bairro');
+          carregarTabelasSupervisor();
         })
         .catch((error) => {
-          showError(errorElement, 'Erro ao cadastrar bairro: ' + error.message);
+          showError(errorElement, 'Erro ao salvar bairro: ' + error.message);
         });
     }
 
-    // Função para carregar as tabelas
-    function carregarTabelas() {
+    // Função para excluir bairro
+    function excluirBairro(id) {
+      if (confirm('Tem certeza que deseja excluir este bairro?')) {
+        db.ref(`bairros/${id}`).remove()
+          .then(() => {
+            const successElement = document.getElementById('success-bairro');
+            successElement.textContent = 'Bairro excluído com sucesso!';
+            successElement.style.display = 'block';
+            setTimeout(() => successElement.style.display = 'none', 3000);
+            carregarTabelasSupervisor();
+          })
+          .catch((error) => {
+            const errorElement = document.getElementById('error-bairro');
+            showError(errorElement, 'Erro ao excluir bairro: ' + error.message);
+          });
+      }
+    }
+
+    // Função para carregar tabelas do supervisor
+    function carregarTabelasSupervisor() {
       const ctosRef = db.ref('ctos');
       const bairrosRef = db.ref('bairros');
       
@@ -341,7 +681,7 @@
         corpo.innerHTML = '';
         
         if (!snapshot.exists()) {
-          document.getElementById('loading-ctos').textContent = 'Nenhuma CTO em manutenção.';
+          document.getElementById('loading-ctos').textContent = 'Nenhuma CTO cadastrada.';
           return;
         }
         
@@ -349,15 +689,18 @@
         
         snapshot.forEach((child) => {
           const cto = child.val();
-          if (cto.status === "Em manutenção") {
-            const linha = document.createElement('tr');
-            linha.innerHTML = `
-              <td>${cto.nome}</td>
-              <td>${cto.bairro}</td>
-              <td><button onclick='abrirMapa("${cto.nome}", ${cto.latitude}, ${cto.longitude})'>Ver no mapa</button></td>
-            `;
-            corpo.appendChild(linha);
-          }
+          const linha = document.createElement('tr');
+          linha.innerHTML = `
+            <td>${cto.nome}</td>
+            <td>${cto.bairro}</td>
+            <td>${cto.cidade}</td>
+            <td>${cto.status}</td>
+            <td>
+              <button onclick='editarCTO("${child.key}", ${JSON.stringify(cto).replace(/"/g, '&quot;')})'>Editar</button>
+              <button class="danger" onclick='excluirCTO("${child.key}")'>Excluir</button>
+            </td>
+          `;
+          corpo.appendChild(linha);
         });
       });
 
@@ -366,7 +709,7 @@
         corpo.innerHTML = '';
         
         if (!snapshot.exists()) {
-          document.getElementById('loading-bairros').textContent = 'Nenhum bairro em manutenção.';
+          document.getElementById('loading-bairros').textContent = 'Nenhum bairro cadastrado.';
           return;
         }
         
@@ -374,12 +717,135 @@
         
         snapshot.forEach((child) => {
           const bairro = child.val();
-          if (bairro.status === "Em manutenção") {
-            const linha = document.createElement('tr');
-            linha.innerHTML = `<td>${bairro.nome}</td><td>${bairro.cidade}</td>`;
-            corpo.appendChild(linha);
-          }
+          const linha = document.createElement('tr');
+          linha.innerHTML = `
+            <td>${bairro.nome}</td>
+            <td>${bairro.cidade}</td>
+            <td>${bairro.status}</td>
+            <td>
+              <button onclick='editarBairro("${child.key}", ${JSON.stringify(bairro).replace(/"/g, '&quot;')})'>Editar</button>
+              <button class="danger" onclick='excluirBairro("${child.key}")'>Excluir</button>
+            </td>
+          `;
+          corpo.appendChild(linha);
         });
+      });
+    }
+
+    // Função para filtrar CTOs (supervisor)
+    function filtrarCTOs() {
+      const status = document.getElementById('filtro-status-cto').value;
+      const linhas = document.querySelectorAll("#tabela-ctos tbody tr");
+      
+      linhas.forEach(linha => {
+        const linhaStatus = linha.cells[3].textContent;
+        if (status === "Todos" || linhaStatus === status) {
+          linha.style.display = "";
+        } else {
+          linha.style.display = "none";
+        }
+      });
+    }
+
+    // Função para filtrar bairros (supervisor)
+    function filtrarBairros() {
+      const status = document.getElementById('filtro-status-bairro').value;
+      const linhas = document.querySelectorAll("#tabela-bairros tbody tr");
+      
+      linhas.forEach(linha => {
+        const linhaStatus = linha.cells[2].textContent;
+        if (status === "Todos" || linhaStatus === status) {
+          linha.style.display = "";
+        } else {
+          linha.style.display = "none";
+        }
+      });
+    }
+
+    // Função para carregar tabelas do atendente
+    function carregarTabelasAtendente() {
+      const ctosRef = db.ref('ctos');
+      const bairrosRef = db.ref('bairros');
+      
+      document.getElementById('loading-ctos-atendente').style.display = 'block';
+      document.getElementById('loading-bairros-atendente').style.display = 'block';
+      
+      ctosRef.on('value', (snapshot) => {
+        const corpo = document.querySelector("#tabela-ctos-atendente tbody");
+        corpo.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          document.getElementById('loading-ctos-atendente').textContent = 'Nenhuma CTO cadastrada.';
+          return;
+        }
+        
+        document.getElementById('loading-ctos-atendente').style.display = 'none';
+        
+        snapshot.forEach((child) => {
+          const cto = child.val();
+          const linha = document.createElement('tr');
+          linha.innerHTML = `
+            <td>${cto.nome}</td>
+            <td>${cto.bairro}</td>
+            <td>${cto.cidade}</td>
+            <td>${cto.status}</td>
+            <td><button onclick='abrirMapa("${cto.nome}", ${cto.latitude}, ${cto.longitude})'>Ver no mapa</button></td>
+          `;
+          corpo.appendChild(linha);
+        });
+      });
+
+      bairrosRef.on('value', (snapshot) => {
+        const corpo = document.querySelector("#tabela-bairros-atendente tbody");
+        corpo.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          document.getElementById('loading-bairros-atendente').textContent = 'Nenhum bairro cadastrado.';
+          return;
+        }
+        
+        document.getElementById('loading-bairros-atendente').style.display = 'none';
+        
+        snapshot.forEach((child) => {
+          const bairro = child.val();
+          const linha = document.createElement('tr');
+          linha.innerHTML = `
+            <td>${bairro.nome}</td>
+            <td>${bairro.cidade}</td>
+            <td>${bairro.status}</td>
+          `;
+          corpo.appendChild(linha);
+        });
+      });
+    }
+
+    // Função para filtrar CTOs (atendente)
+    function filtrarCTOsAtendente() {
+      const status = document.getElementById('filtro-status-cto-atendente').value;
+      const linhas = document.querySelectorAll("#tabela-ctos-atendente tbody tr");
+      
+      linhas.forEach(linha => {
+        const linhaStatus = linha.cells[3].textContent;
+        if (status === "Todos" || linhaStatus === status) {
+          linha.style.display = "";
+        } else {
+          linha.style.display = "none";
+        }
+      });
+    }
+
+    // Função para filtrar bairros (atendente)
+    function filtrarBairrosAtendente() {
+      const status = document.getElementById('filtro-status-bairro-atendente').value;
+      const linhas = document.querySelectorAll("#tabela-bairros-atendente tbody tr");
+      
+      linhas.forEach(linha => {
+        const linhaStatus = linha.cells[2].textContent;
+        if (status === "Todos" || linhaStatus === status) {
+          linha.style.display = "";
+        } else {
+          linha.style.display = "none";
+        }
       });
     }
 
@@ -406,13 +872,30 @@
       }, 100);
     }
 
-    // Função para fechar o mapa
-    function fecharMapa() {
-      document.getElementById('map-modal').style.display = 'none';
-      if (map) {
+    // Função para fechar modal
+    function fecharModal(id) {
+      document.getElementById(id).style.display = 'none';
+      if (id === 'map-modal' && map) {
         map.remove();
         map = null;
       }
+    }
+
+    // Função para abrir tabs
+    function openTab(tabId) {
+      // Esconde todos os conteúdos de tab
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Remove a classe active de todos os botões
+      document.querySelectorAll('.tab-buttons button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Mostra a tab selecionada e marca o botão como ativo
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
     }
 
     // Função para exibir mensagens de erro
@@ -431,9 +914,12 @@
           document.getElementById('login-section').style.display = 'none';
           if (supervisorEmails.includes(user.email)) {
             document.getElementById('supervisor-section').style.display = 'block';
-          } else {
+            carregarTabelasSupervisor();
+          } else if (atendenteEmails.includes(user.email)) {
             document.getElementById('atendente-section').style.display = 'block';
-            carregarTabelas();
+            carregarTabelasAtendente();
+          } else {
+            logout();
           }
         }
       });
