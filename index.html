@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema de Manutenção - CTO e Bairros</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-top: 30px; }
+    input, button, select {
+      padding: 8px; margin: 5px 0; width: 100%;
+    }
+    #login-section, #supervisor-section, #atendente-section { display: none; max-width: 500px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    .modal {
+      display: none; position: fixed; z-index: 9999;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.6);
+    }
+    .modal-content {
+      background-color: #fff; margin: 10% auto; padding: 20px;
+      border: 1px solid #888; width: 90%; max-width: 600px;
+    }
+    #map { height: 400px; }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <div id="login-section">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="E-mail" />
+    <input type="password" id="password" placeholder="Senha" />
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <div id="supervisor-section">
+    <h2>Cadastro de CTO</h2>
+    <input id="cto-nome" placeholder="Nome da CTO" />
+    <input id="cto-lat" placeholder="Latitude" />
+    <input id="cto-lng" placeholder="Longitude" />
+    <input id="cto-endereco" placeholder="Endereço" />
+    <input id="cto-numero" placeholder="Número" />
+    <input id="cto-bairro" placeholder="Bairro" />
+    <input id="cto-cidade" placeholder="Cidade" />
+    <select id="cto-status">
+      <option value="Em manutenção">Em manutenção</option>
+      <option value="Normal">Normal</option>
+    </select>
+    <button onclick="cadastrarCTO()">Cadastrar CTO</button>
+
+    <h2>Cadastro de Bairro</h2>
+    <input id="bairro-nome" placeholder="Nome do Bairro" />
+    <input id="bairro-cidade" placeholder="Cidade" />
+    <select id="bairro-status">
+      <option value="Em manutenção">Em manutenção</option>
+      <option value="Normal">Normal</option>
+    </select>
+    <button onclick="cadastrarBairro()">Cadastrar Bairro</button>
+  </div>
+
+  <div id="atendente-section">
+    <h2>CTOs em Manutenção</h2>
+    <table id="tabela-ctos">
+      <thead><tr><th>Nome</th><th>Bairro</th><th>Ação</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>Bairros em Manutenção</h2>
+    <table id="tabela-bairros">
+      <thead><tr><th>Nome</th><th>Cidade</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Modal do Mapa -->
+  <div id="map-modal" class="modal">
+    <div class="modal-content">
+      <h3 id="map-titulo"></h3>
+      <div id="map"></div>
+      <button onclick="fecharMapa()">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDi5wK70cNr7tJJ55hFsw3vjrMbFtWdc24",
+      authDomain: "ctos-efd7c.firebaseapp.com",
+      databaseURL: "https://ctos-efd7c-default-rtdb.firebaseio.com",
+      projectId: "ctos-efd7c",
+      storageBucket: "ctos-efd7c.firebasestorage.app",
+      messagingSenderId: "1061563628444",
+      appId: "1:1061563628444:web:d008669dcc6ac935a82659"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const supervisorEmails = ["eduardo@sejafibra.com", "junior@sejafibra.net", "bioranss@gmail.com"]; // << Substitua aqui pelos seus
+
+    function login() {
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('password').value;
+      auth.signInWithEmailAndPassword(email, senha)
+        .then((userCred) => {
+          const userEmail = userCred.user.email;
+          document.getElementById('login-section').style.display = 'none';
+          if (supervisorEmails.includes(userEmail)) {
+            document.getElementById('supervisor-section').style.display = 'block';
+          } else {
+            document.getElementById('atendente-section').style.display = 'block';
+            carregarTabelas();
+          }
+        })
+        .catch((error) => {
+          alert("Erro ao entrar: " + error.message);
+        });
+    }
+
+    function cadastrarCTO() {
+      const cto = {
+        nome: document.getElementById('cto-nome').value,
+        latitude: parseFloat(document.getElementById('cto-lat').value),
+        longitude: parseFloat(document.getElementById('cto-lng').value),
+        endereco: document.getElementById('cto-endereco').value,
+        numero: document.getElementById('cto-numero').value,
+        bairro: document.getElementById('cto-bairro').value,
+        cidade: document.getElementById('cto-cidade').value,
+        status: document.getElementById('cto-status').value
+      };
+      db.ref('ctos').push(cto);
+      alert("CTO cadastrada.");
+    }
+
+    function cadastrarBairro() {
+      const bairro = {
+        nome: document.getElementById('bairro-nome').value,
+        cidade: document.getElementById('bairro-cidade').value,
+        status: document.getElementById('bairro-status').value
+      };
+      db.ref('bairros').push(bairro);
+      alert("Bairro cadastrado.");
+    }
+
+    function carregarTabelas() {
+      const ctosRef = db.ref('ctos');
+      ctosRef.on('value', (snapshot) => {
+        const corpo = document.querySelector("#tabela-ctos tbody");
+        corpo.innerHTML = '';
+        snapshot.forEach((child) => {
+          const cto = child.val();
+          if (cto.status === "Em manutenção") {
+            const linha = document.createElement('tr');
+            linha.innerHTML = `
+              <td>${cto.nome}</td>
+              <td>${cto.bairro}</td>
+              <td><button onclick='abrirMapa("${cto.nome}", ${cto.latitude}, ${cto.longitude})'>Ver no mapa</button></td>
+            `;
+            corpo.appendChild(linha);
+          }
+        });
+      });
+
+      const bairrosRef = db.ref('bairros');
+      bairrosRef.on('value', (snapshot) => {
+        const corpo = document.querySelector("#tabela-bairros tbody");
+        corpo.innerHTML = '';
+        snapshot.forEach((child) => {
+          const bairro = child.val();
+          if (bairro.status === "Em manutenção") {
+            const linha = document.createElement('tr');
+            linha.innerHTML = `<td>${bairro.nome}</td><td>${bairro.cidade}</td>`;
+            corpo.appendChild(linha);
+          }
+        });
+      });
+    }
+
+    function abrirMapa(nome, lat, lng) {
+      document.getElementById('map-titulo').innerText = nome;
+      document.getElementById('map-modal').style.display = 'block';
+      setTimeout(() => {
+        const map = L.map('map').setView([lat, lng], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([lat, lng]).addTo(map).bindPopup(nome).openPopup();
+      }, 300);
+    }
+
+    function fecharMapa() {
+      document.getElementById('map-modal').style.display = 'none';
+      document.getElementById('map').innerHTML = ''; // limpa o mapa
+    }
+
+    window.onload = () => {
+      document.getElementById('login-section').style.display = 'block';
+    };
+  </script>
+</body>
+</html>
