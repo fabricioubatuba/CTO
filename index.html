@@ -248,46 +248,57 @@
 
     // Função para cadastrar CTO
     function cadastrarCTO() {
-      const errorElement = document.getElementById('cto-error');
-      errorElement.style.display = 'none';
-      
-      const cto = {
-        nome: document.getElementById('cto-nome').value,
-        latitude: parseFloat(document.getElementById('cto-lat').value),
-        longitude: parseFloat(document.getElementById('cto-lng').value),
-        endereco: document.getElementById('cto-endereco').value,
-        numero: document.getElementById('cto-numero').value,
-        bairro: document.getElementById('cto-bairro').value,
-        cidade: document.getElementById('cto-cidade').value,
-        status: document.getElementById('cto-status').value
-      };
-      
-      // Validação dos campos
-      if (!cto.nome || !cto.endereco || !cto.numero || !cto.bairro || !cto.cidade || !cto.status) {
-        showError(errorElement, 'Por favor, preencha todos os campos.');
-        return;
-      }
-      
-      if (isNaN(cto.latitude)) {
-        showError(errorElement, 'Latitude inválida.');
-        return;
-      }
-      
-      if (isNaN(cto.longitude)) {
-        showError(errorElement, 'Longitude inválida.');
-        return;
-      }
+  const errorElement = document.getElementById('cto-error');
+  errorElement.style.display = 'none';
+  
+  const cto = {
+    nome: document.getElementById('cto-nome').value,
+    latitude: parseFloat(document.getElementById('cto-lat').value),
+    longitude: parseFloat(document.getElementById('cto-lng').value),
+    endereco: document.getElementById('cto-endereco').value,
+    numero: document.getElementById('cto-numero').value,
+    bairro: document.getElementById('cto-bairro').value,
+    cidade: document.getElementById('cto-cidade').value,
+    status: document.getElementById('cto-status').value
+  };
+  
+  // Validação dos campos
+  if (!cto.nome || !cto.endereco || !cto.numero || !cto.bairro || !cto.cidade || !cto.status) {
+    showError(errorElement, 'Por favor, preencha todos os campos.');
+    return;
+  }
+  
+  if (isNaN(cto.latitude)) {
+    showError(errorElement, 'Latitude inválida.');
+    return;
+  }
+  
+  if (isNaN(cto.longitude)) {
+    showError(errorElement, 'Longitude inválida.');
+    return;
+  }
 
-      db.ref('ctos').push(cto)
-        .then(() => {
-          alert("CTO cadastrada com sucesso!");
-          // Limpa os campos
-          document.getElementById('cto-form').reset();
-        })
-        .catch((error) => {
-          showError(errorElement, 'Erro ao cadastrar CTO: ' + error.message);
-        });
-    }
+  // Verifica se o usuário está autenticado
+  if (!auth.currentUser) {
+    showError(errorElement, 'Você precisa estar logado para cadastrar.');
+    return;
+  }
+
+  db.ref('ctos').push(cto)
+    .then(() => {
+      alert("CTO cadastrada com sucesso!");
+      document.getElementById('cto-form').reset();
+    })
+    .catch((error) => {
+      let errorMessage = 'Erro ao cadastrar: ';
+      if (error.code === 'PERMISSION_DENIED') {
+        errorMessage += 'Sem permissão. Verifique se você está logado com um e-mail autorizado.';
+      } else {
+        errorMessage += error.message;
+      }
+      showError(errorElement, errorMessage);
+    });
+}
 
     // Função para cadastrar Bairro
     function cadastrarBairro() {
