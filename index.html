@@ -41,7 +41,7 @@
     button.danger {
       background-color: #d32f2f;
     }
-    #login-section, #supervisor-section, #atendente-section { 
+    #login-section, #supervisor-section, #atendente-section, #tecnico-section { 
       display: none; 
       max-width: 800px; 
       margin: 20px auto;
@@ -137,6 +137,9 @@
       align-items: center;
       margin-bottom: 20px;
     }
+    .header img {
+      height: 50px;
+    }
     .tab-buttons {
       display: flex;
       gap: 10px;
@@ -174,6 +177,7 @@
     
     <div class="header">
       <h1>Painel do Supervisor</h1>
+      <img src="https://raw.githubusercontent.com/seu-usuario/CTO/main/assets/supervisor.png" alt="Supervisor">
     </div>
     
     <div class="tab-buttons">
@@ -250,6 +254,7 @@
     
     <div class="header">
       <h1>Painel do Atendente</h1>
+      <img src="https://raw.githubusercontent.com/seu-usuario/CTO/main/assets/atendente.png" alt="Atendente">
     </div>
     
     <div class="tab-buttons">
@@ -308,6 +313,75 @@
     </div>
   </div>
 
+  <div id="tecnico-section">
+    <button class="logout-btn" onclick="logout()">Sair</button>
+    
+    <div class="header">
+      <h1>Painel do Técnico</h1>
+      <img src="https://raw.githubusercontent.com/seu-usuario/CTO/main/assets/tecnico.png" alt="Técnico">
+    </div>
+    
+    <div class="tab-buttons">
+      <button class="active" onclick="openTab('ctos-tab-tecnico')">CTOs</button>
+      <button onclick="openTab('bairros-tab-tecnico')">Bairros</button>
+    </div>
+    
+    <div id="ctos-tab-tecnico" class="tab-content active">
+      <div class="filters">
+        <h3>Filtrar CTOs</h3>
+        <select id="filtro-status-cto-tecnico" onchange="filtrarCTOsTecnico()">
+          <option value="Todos">Todos os status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+      </div>
+      
+      <div id="loading-ctos-tecnico" class="loading">Carregando CTOs...</div>
+      <div id="success-cto-tecnico" class="success-message"></div>
+      <div id="error-cto-tecnico" class="error-message"></div>
+      
+      <table id="tabela-ctos-tecnico">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Bairro</th>
+            <th>Cidade</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    
+    <div id="bairros-tab-tecnico" class="tab-content">
+      <div class="filters">
+        <h3>Filtrar Bairros</h3>
+        <select id="filtro-status-bairro-tecnico" onchange="filtrarBairrosTecnico()">
+          <option value="Todos">Todos os status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+      </div>
+      
+      <div id="loading-bairros-tecnico" class="loading">Carregando bairros...</div>
+      <div id="success-bairro-tecnico" class="success-message"></div>
+      <div id="error-bairro-tecnico" class="error-message"></div>
+      
+      <table id="tabela-bairros-tecnico">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Cidade</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Modal Cadastro CTO -->
   <div id="modal-cto" class="modal">
     <div class="modal-content">
@@ -335,6 +409,27 @@
     </div>
   </div>
 
+  <!-- Modal Edição Status CTO (para técnico) -->
+  <div id="modal-cto-status" class="modal">
+    <div class="modal-content">
+      <h3 id="modal-cto-status-titulo">Editar Status da CTO</h3>
+      <div id="cto-status-modal-error" class="error-message"></div>
+      <form id="cto-status-form">
+        <input id="cto-status-id" type="hidden">
+        <input id="cto-status-nome" placeholder="Nome da CTO" readonly />
+        <select id="cto-status-status" required>
+          <option value="" disabled selected>Selecione o status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+        <div class="action-buttons">
+          <button type="button" class="secondary" onclick="fecharModal('modal-cto-status')">Cancelar</button>
+          <button type="button" onclick="salvarStatusCTO()">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal Cadastro Bairro -->
   <div id="modal-bairro" class="modal">
     <div class="modal-content">
@@ -352,6 +447,27 @@
         <div class="action-buttons">
           <button type="button" class="secondary" onclick="fecharModal('modal-bairro')">Cancelar</button>
           <button type="button" onclick="salvarBairro()">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Edição Status Bairro (para técnico) -->
+  <div id="modal-bairro-status" class="modal">
+    <div class="modal-content">
+      <h3 id="modal-bairro-status-titulo">Editar Status do Bairro</h3>
+      <div id="bairro-status-modal-error" class="error-message"></div>
+      <form id="bairro-status-form">
+        <input id="bairro-status-id" type="hidden">
+        <input id="bairro-status-nome" placeholder="Nome do Bairro" readonly />
+        <select id="bairro-status-status" required>
+          <option value="" disabled selected>Selecione o status</option>
+          <option value="Em manutenção">Em manutenção</option>
+          <option value="Normal">Normal</option>
+        </select>
+        <div class="action-buttons">
+          <button type="button" class="secondary" onclick="fecharModal('modal-bairro-status')">Cancelar</button>
+          <button type="button" onclick="salvarStatusBairro()">Salvar</button>
         </div>
       </form>
     </div>
@@ -389,19 +505,11 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // Lista de e-mails de supervisores e atendentes
-    const supervisorEmails = [
-      "eduardo@sejafibra.com", 
-      "junior@sejafibra.net", 
-      "bioranss@gmail.com"
-    ];
+    // Lista de e-mails autorizados
+    const supervisorEmails = ["supervisor@sejafibra.net"];
+    const atendenteEmails = ["atendente@sejafibra.net"];
+    const tecnicoEmails = ["tecnico@sejafibra.net"];
     
-    const atendenteEmails = [
-      "tais@sejafibra.net",
-      "ana@sejafibra.net",
-      "alissia@sejafibra.net"
-    ];
-
     // Variável para armazenar o mapa
     let map;
     let ctoEditando = null;
@@ -431,6 +539,9 @@
           } else if (atendenteEmails.includes(userEmail)) {
             document.getElementById('atendente-section').style.display = 'block';
             carregarTabelasAtendente();
+          } else if (tecnicoEmails.includes(userEmail)) {
+            document.getElementById('tecnico-section').style.display = 'block';
+            carregarTabelasTecnico();
           } else {
             logout();
             showError(errorElement, 'Acesso não autorizado para este e-mail.');
@@ -461,6 +572,7 @@
       auth.signOut().then(() => {
         document.getElementById('supervisor-section').style.display = 'none';
         document.getElementById('atendente-section').style.display = 'none';
+        document.getElementById('tecnico-section').style.display = 'none';
         document.getElementById('login-section').style.display = 'block';
         document.getElementById('login-form').reset();
       });
@@ -489,6 +601,15 @@
       document.getElementById('cto-status').value = cto.status;
       ctoEditando = {id, ...cto};
       document.getElementById('modal-cto').style.display = 'block';
+    }
+
+    // Função para abrir modal de edição de status da CTO (para técnico)
+    function editarStatusCTO(id, cto) {
+      document.getElementById('modal-cto-status-titulo').textContent = 'Editar Status da CTO';
+      document.getElementById('cto-status-id').value = id;
+      document.getElementById('cto-status-nome').value = cto.nome;
+      document.getElementById('cto-status-status').value = cto.status;
+      document.getElementById('modal-cto-status').style.display = 'block';
     }
 
     // Função para salvar CTO (criação ou edição)
@@ -541,13 +662,8 @@
 
       promise
         .then(() => {
-          const successElement = id ? 
-            document.getElementById('success-cto') : 
-            document.getElementById('success-cto');
-          
-          successElement.textContent = id ? 
-            'CTO atualizada com sucesso!' : 
-            'CTO cadastrada com sucesso!';
+          const successElement = document.getElementById('success-cto');
+          successElement.textContent = id ? 'CTO atualizada com sucesso!' : 'CTO cadastrada com sucesso!';
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
           
@@ -562,6 +678,34 @@
             errorMessage += error.message;
           }
           showError(errorElement, errorMessage);
+        });
+    }
+
+    // Função para salvar apenas o status da CTO (para técnico)
+    function salvarStatusCTO() {
+      const errorElement = document.getElementById('cto-status-modal-error');
+      errorElement.style.display = 'none';
+      
+      const id = document.getElementById('cto-status-id').value;
+      const status = document.getElementById('cto-status-status').value;
+      
+      if (!status) {
+        showError(errorElement, 'Por favor, selecione um status.');
+        return;
+      }
+
+      db.ref(`ctos/${id}/status`).set(status)
+        .then(() => {
+          const successElement = document.getElementById('success-cto-tecnico');
+          successElement.textContent = 'Status da CTO atualizado com sucesso!';
+          successElement.style.display = 'block';
+          setTimeout(() => successElement.style.display = 'none', 3000);
+          
+          fecharModal('modal-cto-status');
+          carregarTabelasTecnico();
+        })
+        .catch((error) => {
+          showError(errorElement, 'Erro ao atualizar status: ' + error.message);
         });
     }
 
@@ -603,6 +747,15 @@
       document.getElementById('modal-bairro').style.display = 'block';
     }
 
+    // Função para editar status do bairro (para técnico)
+    function editarStatusBairro(id, bairro) {
+      document.getElementById('modal-bairro-status-titulo').textContent = 'Editar Status do Bairro';
+      document.getElementById('bairro-status-id').value = id;
+      document.getElementById('bairro-status-nome').value = bairro.nome;
+      document.getElementById('bairro-status-status').value = bairro.status;
+      document.getElementById('modal-bairro-status').style.display = 'block';
+    }
+
     // Função para salvar bairro (criação ou edição)
     function salvarBairro() {
       const errorElement = document.getElementById('bairro-modal-error');
@@ -632,13 +785,8 @@
 
       promise
         .then(() => {
-          const successElement = id ? 
-            document.getElementById('success-bairro') : 
-            document.getElementById('success-bairro');
-          
-          successElement.textContent = id ? 
-            'Bairro atualizado com sucesso!' : 
-            'Bairro cadastrado com sucesso!';
+          const successElement = document.getElementById('success-bairro');
+          successElement.textContent = id ? 'Bairro atualizado com sucesso!' : 'Bairro cadastrado com sucesso!';
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
           
@@ -647,6 +795,34 @@
         })
         .catch((error) => {
           showError(errorElement, 'Erro ao salvar bairro: ' + error.message);
+        });
+    }
+
+    // Função para salvar apenas o status do bairro (para técnico)
+    function salvarStatusBairro() {
+      const errorElement = document.getElementById('bairro-status-modal-error');
+      errorElement.style.display = 'none';
+      
+      const id = document.getElementById('bairro-status-id').value;
+      const status = document.getElementById('bairro-status-status').value;
+      
+      if (!status) {
+        showError(errorElement, 'Por favor, selecione um status.');
+        return;
+      }
+
+      db.ref(`bairros/${id}/status`).set(status)
+        .then(() => {
+          const successElement = document.getElementById('success-bairro-tecnico');
+          successElement.textContent = 'Status do bairro atualizado com sucesso!';
+          successElement.style.display = 'block';
+          setTimeout(() => successElement.style.display = 'none', 3000);
+          
+          fecharModal('modal-bairro-status');
+          carregarTabelasTecnico();
+        })
+        .catch((error) => {
+          showError(errorElement, 'Erro ao atualizar status: ' + error.message);
         });
     }
 
@@ -849,6 +1025,98 @@
       });
     }
 
+    // Função para carregar tabelas do técnico
+    function carregarTabelasTecnico() {
+      const ctosRef = db.ref('ctos');
+      const bairrosRef = db.ref('bairros');
+      
+      document.getElementById('loading-ctos-tecnico').style.display = 'block';
+      document.getElementById('loading-bairros-tecnico').style.display = 'block';
+      
+      ctosRef.on('value', (snapshot) => {
+        const corpo = document.querySelector("#tabela-ctos-tecnico tbody");
+        corpo.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          document.getElementById('loading-ctos-tecnico').textContent = 'Nenhuma CTO cadastrada.';
+          return;
+        }
+        
+        document.getElementById('loading-ctos-tecnico').style.display = 'none';
+        
+        snapshot.forEach((child) => {
+          const cto = child.val();
+          const linha = document.createElement('tr');
+          linha.innerHTML = `
+            <td>${cto.nome}</td>
+            <td>${cto.bairro}</td>
+            <td>${cto.cidade}</td>
+            <td>${cto.status}</td>
+            <td>
+              <button onclick='editarStatusCTO("${child.key}", ${JSON.stringify(cto).replace(/"/g, '&quot;')})'>Editar Status</button>
+            </td>
+          `;
+          corpo.appendChild(linha);
+        });
+      });
+
+      bairrosRef.on('value', (snapshot) => {
+        const corpo = document.querySelector("#tabela-bairros-tecnico tbody");
+        corpo.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          document.getElementById('loading-bairros-tecnico').textContent = 'Nenhum bairro cadastrado.';
+          return;
+        }
+        
+        document.getElementById('loading-bairros-tecnico').style.display = 'none';
+        
+        snapshot.forEach((child) => {
+          const bairro = child.val();
+          const linha = document.createElement('tr');
+          linha.innerHTML = `
+            <td>${bairro.nome}</td>
+            <td>${bairro.cidade}</td>
+            <td>${bairro.status}</td>
+            <td>
+              <button onclick='editarStatusBairro("${child.key}", ${JSON.stringify(bairro).replace(/"/g, '&quot;')})'>Editar Status</button>
+            </td>
+          `;
+          corpo.appendChild(linha);
+        });
+      });
+    }
+
+    // Função para filtrar CTOs (técnico)
+    function filtrarCTOsTecnico() {
+      const status = document.getElementById('filtro-status-cto-tecnico').value;
+      const linhas = document.querySelectorAll("#tabela-ctos-tecnico tbody tr");
+      
+      linhas.forEach(linha => {
+        const linhaStatus = linha.cells[3].textContent;
+        if (status === "Todos" || linhaStatus === status) {
+          linha.style.display = "";
+        } else {
+          linha.style.display = "none";
+        }
+      });
+    }
+
+    // Função para filtrar bairros (técnico)
+    function filtrarBairrosTecnico() {
+      const status = document.getElementById('filtro-status-bairro-tecnico').value;
+      const linhas = document.querySelectorAll("#tabela-bairros-tecnico tbody tr");
+      
+      linhas.forEach(linha => {
+        const linhaStatus = linha.cells[2].textContent;
+        if (status === "Todos" || linhaStatus === status) {
+          linha.style.display = "";
+        } else {
+          linha.style.display = "none";
+        }
+      });
+    }
+
     // Função para abrir o mapa
     function abrirMapa(nome, lat, lng) {
       document.getElementById('map-titulo').innerText = nome;
@@ -918,6 +1186,9 @@
           } else if (atendenteEmails.includes(user.email)) {
             document.getElementById('atendente-section').style.display = 'block';
             carregarTabelasAtendente();
+          } else if (tecnicoEmails.includes(user.email)) {
+            document.getElementById('tecnico-section').style.display = 'block';
+            carregarTabelasTecnico();
           } else {
             logout();
           }
