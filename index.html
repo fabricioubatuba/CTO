@@ -109,6 +109,14 @@
       margin: 10px 0;
       display: none;
     }
+    .copy-message {
+      color: #1976d2;
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      display: none;
+    }
     form {
       margin: 0;
     }
@@ -202,6 +210,7 @@
       <div id="loading-ctos" class="loading">Carregando CTOs...</div>
       <div id="success-cto" class="success-message"></div>
       <div id="error-cto" class="error-message"></div>
+      <div id="copy-message-cto" class="copy-message"></div>
       
       <table id="tabela-ctos">
         <thead>
@@ -234,6 +243,7 @@
       <div id="loading-bairros" class="loading">Carregando bairros...</div>
       <div id="success-bairro" class="success-message"></div>
       <div id="error-bairro" class="error-message"></div>
+      <div id="copy-message-bairro" class="copy-message"></div>
       
       <table id="tabela-bairros">
         <thead>
@@ -273,6 +283,7 @@
       </div>
       
       <div id="loading-ctos-atendente" class="loading">Carregando CTOs...</div>
+      <div id="copy-message-cto-atendente" class="copy-message"></div>
       
       <table id="tabela-ctos-atendente">
         <thead>
@@ -299,6 +310,7 @@
       </div>
       
       <div id="loading-bairros-atendente" class="loading">Carregando bairros...</div>
+      <div id="copy-message-bairro-atendente" class="copy-message"></div>
       
       <table id="tabela-bairros-atendente">
         <thead>
@@ -339,6 +351,7 @@
       <div id="loading-ctos-tecnico" class="loading">Carregando CTOs...</div>
       <div id="success-cto-tecnico" class="success-message"></div>
       <div id="error-cto-tecnico" class="error-message"></div>
+      <div id="copy-message-cto-tecnico" class="copy-message"></div>
       
       <table id="tabela-ctos-tecnico">
         <thead>
@@ -367,6 +380,7 @@
       <div id="loading-bairros-tecnico" class="loading">Carregando bairros...</div>
       <div id="success-bairro-tecnico" class="success-message"></div>
       <div id="error-bairro-tecnico" class="error-message"></div>
+      <div id="copy-message-bairro-tecnico" class="copy-message"></div>
       
       <table id="tabela-bairros-tecnico">
         <thead>
@@ -514,6 +528,36 @@
     let map;
     let ctoEditando = null;
     let bairroEditando = null;
+
+    // Função para copiar mensagem para área de transferência
+    function copiarMensagemParaClipboard(entidade, nome, novoStatus, elementId) {
+      const agora = new Date();
+      let mensagem;
+      
+      if (novoStatus === "Em manutenção") {
+        // Adiciona 4 horas para a previsão
+        const previsao = new Date(agora.getTime() + 4 * 60 * 60 * 1000);
+        const horaPrevisao = previsao.getHours().toString().padStart(2, '0');
+        const minutoPrevisao = previsao.getMinutes().toString().padStart(2, '0');
+        mensagem = `${entidade} ${nome} Em Manutenção. Previsão até ${horaPrevisao}:${minutoPrevisao}`;
+      } else if (novoStatus === "Normal") {
+        const horaAtual = agora.getHours().toString().padStart(2, '0');
+        const minutoAtual = agora.getMinutes().toString().padStart(2, '0');
+        mensagem = `${entidade} ${nome} Normal. Resolvido às ${horaAtual}:${minutoAtual}`;
+      } else {
+        return; // Não copia mensagem para outros status
+      }
+      
+      // Copia para a área de transferência
+      navigator.clipboard.writeText(mensagem).then(() => {
+        const copyElement = document.getElementById(elementId);
+        copyElement.textContent = 'Mensagem copiada para a área de transferência!';
+        copyElement.style.display = 'block';
+        setTimeout(() => copyElement.style.display = 'none', 3000);
+      }).catch((error) => {
+        console.error('Erro ao copiar mensagem:', error);
+      });
+    }
 
     // Função de login
     function login() {
@@ -667,6 +711,11 @@
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
           
+          // Copia mensagem para área de transferência se o status foi alterado
+          if (ctoEditando && ctoEditando.status !== cto.status) {
+            copiarMensagemParaClipboard("CTO", cto.nome, cto.status, 'copy-message-cto');
+          }
+          
           fecharModal('modal-cto');
           carregarTabelasSupervisor();
         })
@@ -687,6 +736,7 @@
       errorElement.style.display = 'none';
       
       const id = document.getElementById('cto-status-id').value;
+      const nomeCTO = document.getElementById('cto-status-nome').value;
       const status = document.getElementById('cto-status-status').value;
       
       if (!status) {
@@ -700,6 +750,9 @@
           successElement.textContent = 'Status da CTO atualizado com sucesso!';
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
+          
+          // Copia mensagem para área de transferência
+          copiarMensagemParaClipboard("CTO", nomeCTO, status, 'copy-message-cto-tecnico');
           
           fecharModal('modal-cto-status');
           carregarTabelasTecnico();
@@ -790,6 +843,11 @@
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
           
+          // Copia mensagem para área de transferência se o status foi alterado
+          if (bairroEditando && bairroEditando.status !== bairro.status) {
+            copiarMensagemParaClipboard("Bairro", bairro.nome, bairro.status, 'copy-message-bairro');
+          }
+          
           fecharModal('modal-bairro');
           carregarTabelasSupervisor();
         })
@@ -804,6 +862,7 @@
       errorElement.style.display = 'none';
       
       const id = document.getElementById('bairro-status-id').value;
+      const nomeBairro = document.getElementById('bairro-status-nome').value;
       const status = document.getElementById('bairro-status-status').value;
       
       if (!status) {
@@ -817,6 +876,9 @@
           successElement.textContent = 'Status do bairro atualizado com sucesso!';
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
+          
+          // Copia mensagem para área de transferência
+          copiarMensagemParaClipboard("Bairro", nomeBairro, status, 'copy-message-bairro-tecnico');
           
           fecharModal('modal-bairro-status');
           carregarTabelasTecnico();
