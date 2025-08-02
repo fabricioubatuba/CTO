@@ -41,6 +41,12 @@
     button.danger {
       background-color: #d32f2f;
     }
+    button.warning {
+      background-color: #ffa000;
+    }
+    button.success {
+      background-color: #388e3c;
+    }
     #login-section, #supervisor-section, #atendente-section, #tecnico-section { 
       display: none; 
       max-width: 800px; 
@@ -73,14 +79,15 @@
       width: 100%; 
       height: 100%;
       background-color: rgba(0,0,0,0.6);
+      overflow: auto;
     }
     .modal-content {
       background-color: #fff; 
-      margin: 5% auto; 
+      margin: 10% auto; 
       padding: 20px;
       border-radius: 8px;
       width: 90%; 
-      max-width: 800px;
+      max-width: 500px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     #map { 
@@ -112,6 +119,14 @@
     .copy-message {
       color: #1976d2;
       background: #e3f2fd;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      display: none;
+    }
+    .warning-message {
+      color: #ffa000;
+      background: #fff8e1;
       padding: 10px;
       border-radius: 4px;
       margin: 10px 0;
@@ -166,6 +181,29 @@
     .tab-content.active {
       display: block;
     }
+    .status-info {
+      font-size: 0.8em;
+      color: #666;
+      margin-top: 5px;
+    }
+    .status-overdue {
+      color: #d32f2f;
+      font-weight: bold;
+    }
+    #tempo-manutencao-container,
+    #tempo-manutencao-container-tecnico,
+    #tempo-manutencao-container-bairro,
+    #tempo-manutencao-container-bairro-tecnico {
+      margin: 10px 0;
+    }
+    #tempo-manutencao-container label,
+    #tempo-manutencao-container-tecnico label,
+    #tempo-manutencao-container-bairro label,
+    #tempo-manutencao-container-bairro-tecnico label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -189,8 +227,8 @@
     </div>
     
     <div class="tab-buttons">
-      <button class="active" onclick="openTab('ctos-tab')">CTOs</button>
       <button onclick="openTab('bairros-tab')">Bairros</button>
+      <button class="active" onclick="openTab('ctos-tab')">CTOs</button>
     </div>
     
     <div id="ctos-tab" class="tab-content active">
@@ -268,8 +306,8 @@
     </div>
     
     <div class="tab-buttons">
-      <button class="active" onclick="openTab('ctos-tab-atendente')">CTOs</button>
       <button onclick="openTab('bairros-tab-atendente')">Bairros</button>
+      <button class="active" onclick="openTab('ctos-tab-atendente')">CTOs</button>
     </div>
     
     <div id="ctos-tab-atendente" class="tab-content active">
@@ -334,8 +372,8 @@
     </div>
     
     <div class="tab-buttons">
-      <button class="active" onclick="openTab('ctos-tab-tecnico')">CTOs</button>
       <button onclick="openTab('bairros-tab-tecnico')">Bairros</button>
+      <button class="active" onclick="openTab('ctos-tab-tecnico')">CTOs</button>
     </div>
     
     <div id="ctos-tab-tecnico" class="tab-content active">
@@ -410,11 +448,21 @@
         <input id="cto-numero" placeholder="Número" required />
         <input id="cto-bairro" placeholder="Bairro" required />
         <input id="cto-cidade" placeholder="Cidade" required />
-        <select id="cto-status" required>
+        <select id="cto-status" required onchange="mostrarTempoManutencao(this.value)">
           <option value="" disabled selected>Selecione o status</option>
           <option value="Em manutenção">Em manutenção</option>
           <option value="Normal">Normal</option>
         </select>
+        <div id="tempo-manutencao-container" style="display: none;">
+          <label for="cto-tempo-manutencao">Tempo estimado para manutenção:</label>
+          <select id="cto-tempo-manutencao">
+            <option value="30">30 minutos</option>
+            <option value="60">1 hora</option>
+            <option value="120">2 horas</option>
+            <option value="180">3 horas</option>
+            <option value="240" selected>4 horas</option>
+          </select>
+        </div>
         <div class="action-buttons">
           <button type="button" class="secondary" onclick="fecharModal('modal-cto')">Cancelar</button>
           <button type="button" onclick="salvarCTO()">Salvar</button>
@@ -431,11 +479,21 @@
       <form id="cto-status-form">
         <input id="cto-status-id" type="hidden">
         <input id="cto-status-nome" placeholder="Nome da CTO" readonly />
-        <select id="cto-status-status" required>
+        <select id="cto-status-status" required onchange="mostrarTempoManutencaoTecnico(this.value)">
           <option value="" disabled selected>Selecione o status</option>
           <option value="Em manutenção">Em manutenção</option>
           <option value="Normal">Normal</option>
         </select>
+        <div id="tempo-manutencao-container-tecnico" style="display: none;">
+          <label for="cto-tempo-manutencao-tecnico">Tempo estimado para manutenção:</label>
+          <select id="cto-tempo-manutencao-tecnico">
+            <option value="30">30 minutos</option>
+            <option value="60">1 hora</option>
+            <option value="120">2 horas</option>
+            <option value="180">3 horas</option>
+            <option value="240" selected>4 horas</option>
+          </select>
+        </div>
         <div class="action-buttons">
           <button type="button" class="secondary" onclick="fecharModal('modal-cto-status')">Cancelar</button>
           <button type="button" onclick="salvarStatusCTO()">Salvar</button>
@@ -453,11 +511,21 @@
         <input id="bairro-id" type="hidden">
         <input id="bairro-nome" placeholder="Nome do Bairro" required />
         <input id="bairro-cidade" placeholder="Cidade" required />
-        <select id="bairro-status" required>
+        <select id="bairro-status" required onchange="mostrarTempoManutencaoBairro(this.value)">
           <option value="" disabled selected>Selecione o status</option>
           <option value="Em manutenção">Em manutenção</option>
           <option value="Normal">Normal</option>
         </select>
+        <div id="tempo-manutencao-container-bairro" style="display: none;">
+          <label for="bairro-tempo-manutencao">Tempo estimado para manutenção:</label>
+          <select id="bairro-tempo-manutencao">
+            <option value="30">30 minutos</option>
+            <option value="60">1 hora</option>
+            <option value="120">2 horas</option>
+            <option value="180">3 horas</option>
+            <option value="240" selected>4 horas</option>
+          </select>
+        </div>
         <div class="action-buttons">
           <button type="button" class="secondary" onclick="fecharModal('modal-bairro')">Cancelar</button>
           <button type="button" onclick="salvarBairro()">Salvar</button>
@@ -474,11 +542,21 @@
       <form id="bairro-status-form">
         <input id="bairro-status-id" type="hidden">
         <input id="bairro-status-nome" placeholder="Nome do Bairro" readonly />
-        <select id="bairro-status-status" required>
+        <select id="bairro-status-status" required onchange="mostrarTempoManutencaoBairroTecnico(this.value)">
           <option value="" disabled selected>Selecione o status</option>
           <option value="Em manutenção">Em manutenção</option>
           <option value="Normal">Normal</option>
         </select>
+        <div id="tempo-manutencao-container-bairro-tecnico" style="display: none;">
+          <label for="bairro-tempo-manutencao-tecnico">Tempo estimado para manutenção:</label>
+          <select id="bairro-tempo-manutencao-tecnico">
+            <option value="30">30 minutos</option>
+            <option value="60">1 hora</option>
+            <option value="120">2 horas</option>
+            <option value="180">3 horas</option>
+            <option value="240" selected>4 horas</option>
+          </select>
+        </div>
         <div class="action-buttons">
           <button type="button" class="secondary" onclick="fecharModal('modal-bairro-status')">Cancelar</button>
           <button type="button" onclick="salvarStatusBairro()">Salvar</button>
@@ -529,17 +607,54 @@
     let ctoEditando = null;
     let bairroEditando = null;
 
+    // Função para mostrar/ocultar campo de tempo de manutenção
+    function mostrarTempoManutencao(status) {
+      const container = document.getElementById('tempo-manutencao-container');
+      container.style.display = status === 'Em manutenção' ? 'block' : 'none';
+    }
+
+    function mostrarTempoManutencaoTecnico(status) {
+      const container = document.getElementById('tempo-manutencao-container-tecnico');
+      container.style.display = status === 'Em manutenção' ? 'block' : 'none';
+    }
+
+    function mostrarTempoManutencaoBairro(status) {
+      const container = document.getElementById('tempo-manutencao-container-bairro');
+      container.style.display = status === 'Em manutenção' ? 'block' : 'none';
+    }
+
+    function mostrarTempoManutencaoBairroTecnico(status) {
+      const container = document.getElementById('tempo-manutencao-container-bairro-tecnico');
+      container.style.display = status === 'Em manutenção' ? 'block' : 'none';
+    }
+
+    // Função para verificar se a manutenção está atrasada
+    function verificarManutencaoAtrasada(previsaoTermino) {
+      if (!previsaoTermino) return false;
+      const agora = new Date();
+      const previsao = new Date(previsaoTermino);
+      return agora > previsao;
+    }
+
+    // Função para formatar data/hora
+    function formatarDataHora(data) {
+      if (!data) return '';
+      const d = new Date(data);
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
     // Função para copiar mensagem para área de transferência
-    function copiarMensagemParaClipboard(entidade, nome, novoStatus, elementId) {
+    function copiarMensagemParaClipboard(entidade, nome, novoStatus, previsaoTermino, elementId) {
       const agora = new Date();
       let mensagem;
       
       if (novoStatus === "Em manutenção") {
-        // Adiciona 4 horas para a previsão
-        const previsao = new Date(agora.getTime() + 4 * 60 * 60 * 1000);
-        const horaPrevisao = previsao.getHours().toString().padStart(2, '0');
-        const minutoPrevisao = previsao.getMinutes().toString().padStart(2, '0');
-        mensagem = `${entidade} ${nome} Em Manutenção. Previsão até ${horaPrevisao}:${minutoPrevisao}`;
+        if (!previsaoTermino) {
+          console.error('Previsão de término não definida para status "Em manutenção"');
+          return;
+        }
+        const horaPrevisao = formatarDataHora(previsaoTermino);
+        mensagem = `${entidade} ${nome} Em Manutenção. Previsão de término às ${horaPrevisao}`;
       } else if (novoStatus === "Normal") {
         const horaAtual = agora.getHours().toString().padStart(2, '0');
         const minutoAtual = agora.getMinutes().toString().padStart(2, '0');
@@ -627,6 +742,7 @@
       document.getElementById('modal-cto-titulo').textContent = 'Cadastrar CTO';
       document.getElementById('cto-form').reset();
       document.getElementById('cto-id').value = '';
+      document.getElementById('tempo-manutencao-container').style.display = 'none';
       ctoEditando = null;
       document.getElementById('modal-cto').style.display = 'block';
     }
@@ -643,6 +759,10 @@
       document.getElementById('cto-bairro').value = cto.bairro;
       document.getElementById('cto-cidade').value = cto.cidade;
       document.getElementById('cto-status').value = cto.status;
+      
+      // Mostra/oculta o campo de tempo de manutenção conforme o status
+      mostrarTempoManutencao(cto.status);
+      
       ctoEditando = {id, ...cto};
       document.getElementById('modal-cto').style.display = 'block';
     }
@@ -653,6 +773,10 @@
       document.getElementById('cto-status-id').value = id;
       document.getElementById('cto-status-nome').value = cto.nome;
       document.getElementById('cto-status-status').value = cto.status;
+      
+      // Mostra/oculta o campo de tempo de manutenção conforme o status
+      mostrarTempoManutencaoTecnico(cto.status);
+      
       document.getElementById('modal-cto-status').style.display = 'block';
     }
 
@@ -662,6 +786,17 @@
       errorElement.style.display = 'none';
       
       const id = document.getElementById('cto-id').value;
+      const status = document.getElementById('cto-status').value;
+      const tempoManutencao = status === 'Em manutenção' ? 
+        parseInt(document.getElementById('cto-tempo-manutencao').value) : null;
+      
+      // Calcula a previsão de término se estiver em manutenção
+      let previsaoTermino = null;
+      if (status === 'Em manutenção' && tempoManutencao) {
+        const agora = new Date();
+        previsaoTermino = new Date(agora.getTime() + tempoManutencao * 60 * 1000).toISOString();
+      }
+      
       const cto = {
         nome: document.getElementById('cto-nome').value,
         latitude: parseFloat(document.getElementById('cto-lat').value),
@@ -670,7 +805,8 @@
         numero: document.getElementById('cto-numero').value,
         bairro: document.getElementById('cto-bairro').value,
         cidade: document.getElementById('cto-cidade').value,
-        status: document.getElementById('cto-status').value
+        status: status,
+        previsaoTermino: previsaoTermino
       };
       
       // Validação dos campos
@@ -711,9 +847,9 @@
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
           
-          // Copia mensagem para área de transferência se o status foi alterado
-          if (ctoEditando && ctoEditando.status !== cto.status) {
-            copiarMensagemParaClipboard("CTO", cto.nome, cto.status, 'copy-message-cto');
+          // Copia mensagem para área de transferência
+          if (status === 'Em manutenção' || (ctoEditando && ctoEditando.status !== cto.status)) {
+            copiarMensagemParaClipboard("CTO", cto.nome, cto.status, previsaoTermino, 'copy-message-cto');
           }
           
           fecharModal('modal-cto');
@@ -738,13 +874,27 @@
       const id = document.getElementById('cto-status-id').value;
       const nomeCTO = document.getElementById('cto-status-nome').value;
       const status = document.getElementById('cto-status-status').value;
+      const tempoManutencao = status === 'Em manutenção' ? 
+        parseInt(document.getElementById('cto-tempo-manutencao-tecnico').value) : null;
+      
+      // Calcula a previsão de término se estiver em manutenção
+      let previsaoTermino = null;
+      if (status === 'Em manutenção' && tempoManutencao) {
+        const agora = new Date();
+        previsaoTermino = new Date(agora.getTime() + tempoManutencao * 60 * 1000).toISOString();
+      }
       
       if (!status) {
         showError(errorElement, 'Por favor, selecione um status.');
         return;
       }
 
-      db.ref(`ctos/${id}/status`).set(status)
+      const updates = {
+        status: status,
+        previsaoTermino: previsaoTermino
+      };
+
+      db.ref(`ctos/${id}`).update(updates)
         .then(() => {
           const successElement = document.getElementById('success-cto-tecnico');
           successElement.textContent = 'Status da CTO atualizado com sucesso!';
@@ -752,7 +902,7 @@
           setTimeout(() => successElement.style.display = 'none', 3000);
           
           // Copia mensagem para área de transferência
-          copiarMensagemParaClipboard("CTO", nomeCTO, status, 'copy-message-cto-tecnico');
+          copiarMensagemParaClipboard("CTO", nomeCTO, status, previsaoTermino, 'copy-message-cto-tecnico');
           
           fecharModal('modal-cto-status');
           carregarTabelasTecnico();
@@ -785,6 +935,7 @@
       document.getElementById('modal-bairro-titulo').textContent = 'Cadastrar Bairro';
       document.getElementById('bairro-form').reset();
       document.getElementById('bairro-id').value = '';
+      document.getElementById('tempo-manutencao-container-bairro').style.display = 'none';
       bairroEditando = null;
       document.getElementById('modal-bairro').style.display = 'block';
     }
@@ -796,6 +947,10 @@
       document.getElementById('bairro-nome').value = bairro.nome;
       document.getElementById('bairro-cidade').value = bairro.cidade;
       document.getElementById('bairro-status').value = bairro.status;
+      
+      // Mostra/oculta o campo de tempo de manutenção conforme o status
+      mostrarTempoManutencaoBairro(bairro.status);
+      
       bairroEditando = {id, ...bairro};
       document.getElementById('modal-bairro').style.display = 'block';
     }
@@ -806,6 +961,10 @@
       document.getElementById('bairro-status-id').value = id;
       document.getElementById('bairro-status-nome').value = bairro.nome;
       document.getElementById('bairro-status-status').value = bairro.status;
+      
+      // Mostra/oculta o campo de tempo de manutenção conforme o status
+      mostrarTempoManutencaoBairroTecnico(bairro.status);
+      
       document.getElementById('modal-bairro-status').style.display = 'block';
     }
 
@@ -815,10 +974,22 @@
       errorElement.style.display = 'none';
       
       const id = document.getElementById('bairro-id').value;
+      const status = document.getElementById('bairro-status').value;
+      const tempoManutencao = status === 'Em manutenção' ? 
+        parseInt(document.getElementById('bairro-tempo-manutencao').value) : null;
+      
+      // Calcula a previsão de término se estiver em manutenção
+      let previsaoTermino = null;
+      if (status === 'Em manutenção' && tempoManutencao) {
+        const agora = new Date();
+        previsaoTermino = new Date(agora.getTime() + tempoManutencao * 60 * 1000).toISOString();
+      }
+      
       const bairro = {
         nome: document.getElementById('bairro-nome').value,
         cidade: document.getElementById('bairro-cidade').value,
-        status: document.getElementById('bairro-status').value
+        status: status,
+        previsaoTermino: previsaoTermino
       };
       
       // Validação dos campos
@@ -843,9 +1014,9 @@
           successElement.style.display = 'block';
           setTimeout(() => successElement.style.display = 'none', 3000);
           
-          // Copia mensagem para área de transferência se o status foi alterado
-          if (bairroEditando && bairroEditando.status !== bairro.status) {
-            copiarMensagemParaClipboard("Bairro", bairro.nome, bairro.status, 'copy-message-bairro');
+          // Copia mensagem para área de transferência
+          if (status === 'Em manutenção' || (bairroEditando && bairroEditando.status !== bairro.status)) {
+            copiarMensagemParaClipboard("Bairro", bairro.nome, bairro.status, previsaoTermino, 'copy-message-bairro');
           }
           
           fecharModal('modal-bairro');
@@ -864,13 +1035,27 @@
       const id = document.getElementById('bairro-status-id').value;
       const nomeBairro = document.getElementById('bairro-status-nome').value;
       const status = document.getElementById('bairro-status-status').value;
+      const tempoManutencao = status === 'Em manutenção' ? 
+        parseInt(document.getElementById('bairro-tempo-manutencao-tecnico').value) : null;
+      
+      // Calcula a previsão de término se estiver em manutenção
+      let previsaoTermino = null;
+      if (status === 'Em manutenção' && tempoManutencao) {
+        const agora = new Date();
+        previsaoTermino = new Date(agora.getTime() + tempoManutencao * 60 * 1000).toISOString();
+      }
       
       if (!status) {
         showError(errorElement, 'Por favor, selecione um status.');
         return;
       }
 
-      db.ref(`bairros/${id}/status`).set(status)
+      const updates = {
+        status: status,
+        previsaoTermino: previsaoTermino
+      };
+
+      db.ref(`bairros/${id}`).update(updates)
         .then(() => {
           const successElement = document.getElementById('success-bairro-tecnico');
           successElement.textContent = 'Status do bairro atualizado com sucesso!';
@@ -878,7 +1063,7 @@
           setTimeout(() => successElement.style.display = 'none', 3000);
           
           // Copia mensagem para área de transferência
-          copiarMensagemParaClipboard("Bairro", nomeBairro, status, 'copy-message-bairro-tecnico');
+          copiarMensagemParaClipboard("Bairro", nomeBairro, status, previsaoTermino, 'copy-message-bairro-tecnico');
           
           fecharModal('modal-bairro-status');
           carregarTabelasTecnico();
@@ -927,12 +1112,23 @@
         
         snapshot.forEach((child) => {
           const cto = child.val();
+          const atrasado = cto.status === 'Em manutenção' && verificarManutencaoAtrasada(cto.previsaoTermino);
+          const statusClass = cto.status === 'Normal' ? 'success' : 
+                            atrasado ? 'danger' : 'warning';
+          
           const linha = document.createElement('tr');
           linha.innerHTML = `
             <td>${cto.nome}</td>
             <td>${cto.bairro}</td>
             <td>${cto.cidade}</td>
-            <td>${cto.status}</td>
+            <td>
+              <button class="${statusClass}">${cto.status}</button>
+              ${cto.status === 'Em manutenção' && cto.previsaoTermino ? 
+                `<div class="status-info ${atrasado ? 'status-overdue' : ''}">
+                  Previsão: ${formatarDataHora(cto.previsaoTermino)}
+                  ${atrasado ? ' (Atrasada)' : ''}
+                </div>` : ''}
+            </td>
             <td>
               <button onclick='editarCTO("${child.key}", ${JSON.stringify(cto).replace(/"/g, '&quot;')})'>Editar</button>
               <button class="danger" onclick='excluirCTO("${child.key}")'>Excluir</button>
@@ -955,11 +1151,22 @@
         
         snapshot.forEach((child) => {
           const bairro = child.val();
+          const atrasado = bairro.status === 'Em manutenção' && verificarManutencaoAtrasada(bairro.previsaoTermino);
+          const statusClass = bairro.status === 'Normal' ? 'success' : 
+                            atrasado ? 'danger' : 'warning';
+          
           const linha = document.createElement('tr');
           linha.innerHTML = `
             <td>${bairro.nome}</td>
             <td>${bairro.cidade}</td>
-            <td>${bairro.status}</td>
+            <td>
+              <button class="${statusClass}">${bairro.status}</button>
+              ${bairro.status === 'Em manutenção' && bairro.previsaoTermino ? 
+                `<div class="status-info ${atrasado ? 'status-overdue' : ''}">
+                  Previsão: ${formatarDataHora(bairro.previsaoTermino)}
+                  ${atrasado ? ' (Atrasada)' : ''}
+                </div>` : ''}
+            </td>
             <td>
               <button onclick='editarBairro("${child.key}", ${JSON.stringify(bairro).replace(/"/g, '&quot;')})'>Editar</button>
               <button class="danger" onclick='excluirBairro("${child.key}")'>Excluir</button>
@@ -976,7 +1183,7 @@
       const linhas = document.querySelectorAll("#tabela-ctos tbody tr");
       
       linhas.forEach(linha => {
-        const linhaStatus = linha.cells[3].textContent;
+        const linhaStatus = linha.cells[3].querySelector('button').textContent;
         if (status === "Todos" || linhaStatus === status) {
           linha.style.display = "";
         } else {
@@ -991,7 +1198,7 @@
       const linhas = document.querySelectorAll("#tabela-bairros tbody tr");
       
       linhas.forEach(linha => {
-        const linhaStatus = linha.cells[2].textContent;
+        const linhaStatus = linha.cells[2].querySelector('button').textContent;
         if (status === "Todos" || linhaStatus === status) {
           linha.style.display = "";
         } else {
@@ -1021,12 +1228,23 @@
         
         snapshot.forEach((child) => {
           const cto = child.val();
+          const atrasado = cto.status === 'Em manutenção' && verificarManutencaoAtrasada(cto.previsaoTermino);
+          const statusClass = cto.status === 'Normal' ? 'success' : 
+                            atrasado ? 'danger' : 'warning';
+          
           const linha = document.createElement('tr');
           linha.innerHTML = `
             <td>${cto.nome}</td>
             <td>${cto.bairro}</td>
             <td>${cto.cidade}</td>
-            <td>${cto.status}</td>
+            <td>
+              <button class="${statusClass}">${cto.status}</button>
+              ${cto.status === 'Em manutenção' && cto.previsaoTermino ? 
+                `<div class="status-info ${atrasado ? 'status-overdue' : ''}">
+                  Previsão: ${formatarDataHora(cto.previsaoTermino)}
+                  ${atrasado ? ' (Atrasada)' : ''}
+                </div>` : ''}
+            </td>
             <td><button onclick='abrirMapa("${cto.nome}", ${cto.latitude}, ${cto.longitude})'>Ver no mapa</button></td>
           `;
           corpo.appendChild(linha);
@@ -1046,11 +1264,22 @@
         
         snapshot.forEach((child) => {
           const bairro = child.val();
+          const atrasado = bairro.status === 'Em manutenção' && verificarManutencaoAtrasada(bairro.previsaoTermino);
+          const statusClass = bairro.status === 'Normal' ? 'success' : 
+                            atrasado ? 'danger' : 'warning';
+          
           const linha = document.createElement('tr');
           linha.innerHTML = `
             <td>${bairro.nome}</td>
             <td>${bairro.cidade}</td>
-            <td>${bairro.status}</td>
+            <td>
+              <button class="${statusClass}">${bairro.status}</button>
+              ${bairro.status === 'Em manutenção' && bairro.previsaoTermino ? 
+                `<div class="status-info ${atrasado ? 'status-overdue' : ''}">
+                  Previsão: ${formatarDataHora(bairro.previsaoTermino)}
+                  ${atrasado ? ' (Atrasada)' : ''}
+                </div>` : ''}
+            </td>
           `;
           corpo.appendChild(linha);
         });
@@ -1063,7 +1292,7 @@
       const linhas = document.querySelectorAll("#tabela-ctos-atendente tbody tr");
       
       linhas.forEach(linha => {
-        const linhaStatus = linha.cells[3].textContent;
+        const linhaStatus = linha.cells[3].querySelector('button').textContent;
         if (status === "Todos" || linhaStatus === status) {
           linha.style.display = "";
         } else {
@@ -1078,7 +1307,7 @@
       const linhas = document.querySelectorAll("#tabela-bairros-atendente tbody tr");
       
       linhas.forEach(linha => {
-        const linhaStatus = linha.cells[2].textContent;
+        const linhaStatus = linha.cells[2].querySelector('button').textContent;
         if (status === "Todos" || linhaStatus === status) {
           linha.style.display = "";
         } else {
@@ -1108,12 +1337,23 @@
         
         snapshot.forEach((child) => {
           const cto = child.val();
+          const atrasado = cto.status === 'Em manutenção' && verificarManutencaoAtrasada(cto.previsaoTermino);
+          const statusClass = cto.status === 'Normal' ? 'success' : 
+                            atrasado ? 'danger' : 'warning';
+          
           const linha = document.createElement('tr');
           linha.innerHTML = `
             <td>${cto.nome}</td>
             <td>${cto.bairro}</td>
             <td>${cto.cidade}</td>
-            <td>${cto.status}</td>
+            <td>
+              <button class="${statusClass}">${cto.status}</button>
+              ${cto.status === 'Em manutenção' && cto.previsaoTermino ? 
+                `<div class="status-info ${atrasado ? 'status-overdue' : ''}">
+                  Previsão: ${formatarDataHora(cto.previsaoTermino)}
+                  ${atrasado ? ' (Atrasada)' : ''}
+                </div>` : ''}
+            </td>
             <td>
               <button onclick='editarStatusCTO("${child.key}", ${JSON.stringify(cto).replace(/"/g, '&quot;')})'>Editar Status</button>
             </td>
@@ -1135,11 +1375,22 @@
         
         snapshot.forEach((child) => {
           const bairro = child.val();
+          const atrasado = bairro.status === 'Em manutenção' && verificarManutencaoAtrasada(bairro.previsaoTermino);
+          const statusClass = bairro.status === 'Normal' ? 'success' : 
+                            atrasado ? 'danger' : 'warning';
+          
           const linha = document.createElement('tr');
           linha.innerHTML = `
             <td>${bairro.nome}</td>
             <td>${bairro.cidade}</td>
-            <td>${bairro.status}</td>
+            <td>
+              <button class="${statusClass}">${bairro.status}</button>
+              ${bairro.status === 'Em manutenção' && bairro.previsaoTermino ? 
+                `<div class="status-info ${atrasado ? 'status-overdue' : ''}">
+                  Previsão: ${formatarDataHora(bairro.previsaoTermino)}
+                  ${atrasado ? ' (Atrasada)' : ''}
+                </div>` : ''}
+            </td>
             <td>
               <button onclick='editarStatusBairro("${child.key}", ${JSON.stringify(bairro).replace(/"/g, '&quot;')})'>Editar Status</button>
             </td>
@@ -1155,7 +1406,7 @@
       const linhas = document.querySelectorAll("#tabela-ctos-tecnico tbody tr");
       
       linhas.forEach(linha => {
-        const linhaStatus = linha.cells[3].textContent;
+        const linhaStatus = linha.cells[3].querySelector('button').textContent;
         if (status === "Todos" || linhaStatus === status) {
           linha.style.display = "";
         } else {
@@ -1170,7 +1421,7 @@
       const linhas = document.querySelectorAll("#tabela-bairros-tecnico tbody tr");
       
       linhas.forEach(linha => {
-        const linhaStatus = linha.cells[2].textContent;
+        const linhaStatus = linha.cells[2].querySelector('button').textContent;
         if (status === "Todos" || linhaStatus === status) {
           linha.style.display = "";
         } else {
